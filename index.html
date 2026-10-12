@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paytm Webview Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout concept: a blueprint sheet. Phone wireframes in a scrolling strip with the API call and the events pinned under each screen; a second tab sketches the 3-page Power BI report. */
+:root {
+  --bg: #faf9f6;
+  color-scheme: light;
+  --surface: #ffffff;
+  --ink: #18211d;
+  --muted: #5d6a63;
+  --line: #d8ddd4;
+  --accent: #0f6f66;
+  --accent-soft: #dcefec;
+  --api: #3342b8;
+  --api-soft: #e3e6fb;
+  --evt: #9a4a07;
+  --evt-soft: #fbead2;
+  --wire: #e9ece6;
+  --wire-line: #c9cfc4;
+  --dash: #8a948d;
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', sans-serif;
+  --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 48px; }
+* { box-sizing: border-box; }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: 28px; }
+h2 { font-size: 20px; }
+h3 { font-size: 15px; }
+p { margin: 0; }
+.sub { color: var(--muted); max-width: 70ch; }
+.mono { font-family: var(--font-mono); font-size: 12px; }
+header { display: flex; flex-direction: column; gap: 8px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 12.5px; }
+.facts b { color: var(--ink); font-weight: 600; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { font: inherit; font-weight: 600; background: none; border: 0; border-bottom: 3px solid transparent; padding: 9px 14px; color: var(--muted); cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab:focus-visible, .pg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.chip { display: inline-block; border-radius: 4px; padding: 1px 7px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5; }
+.chip.api { background: var(--api-soft); color: var(--api); }
+.chip.evt { background: var(--evt-soft); color: var(--evt); }
+.chip.url { background: var(--accent-soft); color: var(--accent); }
+.strip { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; align-items: stretch; }
+.step { flex: 0 0 248px; display: flex; flex-direction: column; gap: 10px; }
+.step-head { display: flex; flex-direction: column; gap: 3px; }
+.step-no { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.phone { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 10px; height: 330px; display: flex; flex-direction: column; gap: 7px; position: relative; overflow: hidden; }
+.w { background: var(--wire); border: 1px solid var(--wire-line); border-radius: 6px; padding: 5px 8px; font-size: 11px; color: var(--muted); }
+.w.bar { display: flex; justify-content: space-between; align-items: center; background: transparent; border: 0; border-bottom: 1px solid var(--wire-line); border-radius: 0; color: var(--ink); font-weight: 600; padding: 2px 2px 7px; }
+.w.hero { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); padding: 12px 8px; text-align: center; font-weight: 600; font-size: 12px; }
+.w.row { display: flex; gap: 5px; padding: 4px; background: transparent; border: 0; }
+.w.row span { border: 1px solid var(--wire-line); border-radius: 99px; padding: 1px 8px; font-size: 10.5px; background: var(--wire); }
+.w.row span.on { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.w.cta { background: var(--accent); border-color: var(--accent); color: var(--surface); text-align: center; font-weight: 600; margin-top: auto; padding: 8px; font-size: 12px; }
+.w.input { background: var(--surface); border-style: solid; padding: 8px; }
+.w.err { background: transparent; border: 0; color: #b3261e; padding: 0 2px; font-size: 10.5px; }
+.w.sheet { margin-top: auto; background: var(--surface); border: 1px solid var(--wire-line); border-radius: 12px 12px 0 0; padding: 10px; color: var(--ink); box-shadow: 0 -6px 14px rgba(0,0,0,.08); }
+.w.cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; background: transparent; border: 0; padding: 0; }
+.w.cols span { border: 1px solid var(--wire-line); background: var(--wire); border-radius: 6px; padding: 8px 2px; text-align: center; font-size: 10px; }
+.w.list > div { padding: 4px 0; border-bottom: 1px dashed var(--wire-line); }
+.w.list > div:last-child { border: 0; }
+.dashed .phone { border-style: dashed; border-color: var(--dash); }
+.pin { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.pin .line { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+.pin .tag { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); width: 100%; }
+.arrow { flex: 0 0 18px; align-self: center; color: var(--dash); font-family: var(--font-mono); }
+.note { font-size: 12px; color: var(--muted); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+td.n { font-variant-numeric: tabular-nums; }
+/* BI */
+.pgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.pg { font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 12px; cursor: pointer; text-align: left; }
+.pg[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.canvas { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.slicers { display: flex; flex-wrap: wrap; gap: 6px; }
+.slicers span { border: 1px solid var(--wire-line); background: var(--wire); border-radius: 6px; padding: 3px 9px; font-size: 11.5px; color: var(--muted); }
+.slicers span b { color: var(--ink); font-weight: 600; }
+.grid { display: grid; gap: 10px; grid-template-columns: repeat(12, 1fr); }
+.vis { border: 1px dashed var(--wire-line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: var(--bg); }
+.vis .t { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; } .c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
+@media (max-width: 760px) { .c3, .c4, .c5, .c6, .c7, .c8 { grid-column: span 12; } }
+.kpi { font-family: var(--font-display); font-size: 22px; color: var(--ink); }
+.kpi small { display: block; font-family: var(--font-body); font-size: 11.5px; color: var(--muted); }
+.bars { display: flex; flex-direction: column; gap: 5px; }
+.bars div { display: flex; align-items: center; gap: 8px; font-size: 11.5px; }
+.bars i { display: block; height: 14px; border-radius: 3px; background: var(--accent); opacity: .75; }
+.bars span { flex: 0 0 120px; color: var(--muted); }
+.line svg { width: 100%; height: 70px; display: block; }
+.flowrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 11.5px; }
+.flowrow span { border: 1px solid var(--wire-line); background: var(--wire); border-radius: 6px; padding: 3px 8px; }
+.model { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.model .node { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--surface); font-size: 12px; }
+.model .node.core { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+ul.tight { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+.screen { display: grid; grid-template-columns: 260px 1fr; gap: 18px; padding-block: 18px; border-top: 1px solid var(--line); align-items: start; }
+.screen:first-child { border-top: 0; }
+@media (max-width: 720px) { .screen { grid-template-columns: 1fr; } }
+.screen.dashed .phone { border-style: dashed; border-color: var(--dash); }
+.right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.apis { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.evs { display: flex; flex-direction: column; gap: 8px; }
+.ev { display: grid; grid-template-columns: minmax(0, 15.5em) 1fr; gap: 4px 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+@media (max-width: 720px) { .ev { grid-template-columns: 1fr; } }
+.ev .d { font-size: 13px; }
+.ev .p { grid-column: 2; font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
+@media (max-width: 720px) { .ev .p { grid-column: 1; } }
+.ev .chip { align-self: start; width: fit-content; overflow-wrap: anywhere; }
+.sec { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+body { margin: 0; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Paytm webview map</h1>
+    <p class="sub">Each page of the Paytm webview, the API call behind it, and every event on it with what it does. Then the Power BI report built on those events. Wireframes only, no live numbers.</p>
+    <div class="facts"><span><b>32 events</b>, all prefixed <span class="mono">pw_</span>, all with <span class="mono">source=paytm</span> and <span class="mono">user_id</span> (CK id)</span></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-flow" aria-selected="true" aria-controls="p-flow">Pages and events</button>
+    <button class="tab" role="tab" id="t-bi" aria-selected="false" aria-controls="p-bi">Power BI report</button>
+  </div>
+
+  <section class="panel" id="p-flow" role="tabpanel" aria-labelledby="t-flow">
+    <div id="screens"></div>
+  </section>
+
+  <section class="panel" id="p-bi" role="tabpanel" aria-labelledby="t-bi" hidden>
+    <div class="wrap">
+      <div>
+        <h2>Paytm Webview Analytics</h2>
+        <p class="sub">One report, three pages, filtered on <span class="mono">source</span> (default paytm). Events are joined to existing exit clicks, transactions, commission and the store master. MCT claim rates and ticket resolution are left out.</p>
+      </div>
+      <div class="pgs" id="pgs"></div>
+      <div class="canvas" id="canvas"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var E = function (a) { return a.map(function (x) { return '<span class="chip evt">' + x + '</span>'; }).join(' '); };
+  var A = function (a) { return a.map(function (x) { return '<div><span class="chip api">' + x[0] + '</span> <span class="mono">' + x[1] + '</span></div>'; }).join(''); };
+  function wire(b) {
+    return b.map(function (x) {
+      var t = x[0], v = x[1];
+      if (t === 'bar') return '<div class="w bar"><span>' + v[0] + '</span><span>' + (v[1] || '') + '</span></div>';
+      if (t === 'hero') return '<div class="w hero">' + v + '</div>';
+      if (t === 'row') return '<div class="w row">' + v.map(function (c, i) { return '<span class="' + (i === 0 ? 'on' : '') + '">' + c + '</span>'; }).join('') + '</div>';
+      if (t === 'cta') return '<div class="w cta">' + v + '</div>';
+      if (t === 'input') return '<div class="w input">' + v + '</div>';
+      if (t === 'err') return '<div class="w err">' + v + '</div>';
+      if (t === 'sheet') return '<div class="w sheet">' + v + '</div>';
+      if (t === 'cols') return '<div class="w cols">' + v.map(function (c) { return '<span>' + c + '</span>'; }).join('') + '</div>';
+      if (t === 'list') return '<div class="w list">' + v.map(function (c) { return '<div>' + c + '</div>'; }).join('') + '</div>';
+      return '<div class="w">' + v + '</div>';
+    }).join('');
+  }
+  var S = [{"t": "Entry", "u": "any page, opened with a signed link", "api": [["GET", "paytm/session"], ["returns", "token + ck_id"]], "w": [["bar", ["CashKaro", ""]], ["box", "Loading while the link is checked"], ["box", "On failure: Session expired. Please go back and open this page again."]], "e": [{"n": "pw_session_success", "d": "Paytm signed link exchanged for a CK session (GET paytm/session returns a token)", "p": []}, {"n": "pw_session_error_page", "d": "Session error screen shown", "p": ["type [invalid_link, login_failed, session_expired]"]}]}, {"t": "My Cashback", "u": "/cashback", "api": [["GET", "users/earnings"], ["GET", "users/orders (+ status filter)"]], "w": [["bar", ["My Cashback", "My Tickets"]], ["hero", "All time earnings"], ["box", "Pending · Know Why?"], ["box", "Don't see your order here? ›"], ["row", ["All", "Pending", "Confirmed", "Paid"]], ["list", ["Order row", "Order row", "Nothing here yet (empty)"]]], "e": [{"n": "pw_cashback_page", "d": "My Cashback screen rendered", "p": []}, {"n": "pw_cashback_filter_click", "d": "User taps a status filter", "p": ["type [all, pending, confirmed, paid]"]}, {"n": "pw_earn_status_load", "d": "Earning Status bottom sheet opens", "p": []}, {"n": "pw_cashback_screen_clicks", "d": "Other taps on My Cashback", "p": ["action [my_tickets, earning_info]"]}, {"n": "pw_missing_entry_click", "d": "User starts a claim: taps \"Don't see your order here?\" on My Cashback, or \"Have more cashback to track?\" on Tickets", "p": ["source_page [my_cashback, tickets]"]}]}, {"t": "Store page", "u": "/store/<store>", "api": [["GET", "users/store/<slug>?include=coupons,secondary_cashback"], ["then", "backend records the exit click"]], "w": [["bar", ["Myntra", ""]], ["hero", "3 - 6% CASHBACK<br>View Rates"], ["box", "How to get cashback (3 steps)"], ["cols", ["Tracks within", "Confirms in", "Credited"]], ["cta", "Shop on Myntra"]], "e": [{"n": "pw_store_page", "d": "Store page V2 rendered", "p": ["store_id", "store_name"]}, {"n": "pw_store_exit_click", "d": "User taps the shop CTA to leave for the retailer", "p": ["store_id", "store_name"]}, {"n": "pw_store_timeline_click", "d": "User taps one of the three cashback timeline cards", "p": ["action [tracks, confirms, credited]", "store_id"]}, {"n": "pw_store_coupon_click", "d": "User copies a coupon code", "p": ["store_id"]}, {"n": "pw_store_screen_clicks", "d": "Other taps on the store page", "p": ["action [details, terms, faq, my_cashback]", "store_id"]}, {"n": "pw_store_scroll", "d": "User scrolls the store page past 25, 50, 75 and 100 percent of its height. Fires once per milestone per page view.", "p": ["action [25, 50, 75, 100]", "store_id", "store_name"]}]}, {"t": "Did you shop?", "u": "/missing-cashback/claim", "api": [["GET", "users/missing-cashback/retailers"]], "w": [["bar", ["‹", ""]], ["box", "Where did you shop?<br>Retailers visited in the last 30 days"], ["list", ["Myntra · autotracks 72h", "Ajio · autotracks 5m", "Shopsy · autotracks 48h"]]], "e": [{"n": "pw_claim_retailer_click", "d": "User taps a retailer in Did you shop?", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}, {"n": "pw_claim_novisit_page", "d": "Oops screen: no retailer visited in the last 30 days", "p": []}]}, {"t": "Choose date", "u": "/missing-cashback/claim/<storeId>/date", "api": [["GET", "users/missing-cashback/exit-click-dates/<storeId>"], ["POST", "users/missing-cashback/validate (on Continue)"]], "w": [["bar", ["‹", ""]], ["box", "Retailer logo<br>Choose the date you shopped"], ["box", "October · date chip (09)"], ["cta", "Continue"]], "e": [{"n": "pw_claim_date_submit", "d": "Continue after picking the shopping date", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}]}, {"t": "Order ID", "u": ".../<storeId>/order-id", "api": [["", "format check in the page; 'already tracked' comes back from the server"]], "w": [["bar", ["‹", ""]], ["box", "Now, tell us your order ID<br>Sample ID shown per retailer"], ["input", "Enter Order ID"], ["err", "Uh oh! Enter correct Order ID."], ["cta", "Continue"]], "e": [{"n": "pw_claim_oid_submit", "d": "Submit after entering order ID", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}, {"n": "pw_claim_tracked_load", "d": "Cashback Tracked sheet shown (already tracked for the date or order)", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}, {"n": "pw_claim_tracked_cta_click", "d": "User taps View Details on the Cashback Tracked sheet", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}]}, {"t": "Order amount", "u": ".../<storeId>/amount", "api": [["POST", "users/missing-cashback/queue"]], "w": [["bar", ["‹", ""]], ["box", "Now, tell us your order amount<br>Amount paid after discounts"], ["input", "Enter order amount"], ["cta", "Submit"]], "e": [{"n": "pw_claim_amt_submit", "d": "Submit after entering order amount", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}, {"n": "pw_claim_submit_success", "d": "Ticket raised successfully (Ticket Added)", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]", "timeline [After timeline, Before timeline]", "action [in_review, closed]"]}, {"n": "pw_claim_error_load", "d": "A claim step fails or is rejected (inline error or toast)", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]", "action [date, order_id, amount]", "name [validation, conflict, network, timeout, server, rate_limited, unauthorized, unknown]"]}]}, {"t": "Tickets", "u": "/missing-cashback", "api": [["GET", "users/missing-cashback/queue?status=Pending"], ["GET", "users/missing-cashback/queue?status=Resolved"]], "w": [["bar", ["Missing Cashback", ""]], ["row", ["In Review", "Closed"]], ["list", ["Under review · countdown<br>Order ID · amount", "Closed · ₹ credited<br>View Details"]], ["cta", "Have more cashback to track? ›"]], "e": [{"n": "pw_missing_page", "d": "Tickets screen rendered", "p": []}, {"n": "pw_missing_tab_click", "d": "User switches ticket tab", "p": ["action [in_review, closed]"]}, {"n": "pw_ticket_view_click", "d": "User taps View Details on a closed ticket card", "p": ["action [view_details]", "retailer"]}, {"n": "pw_ticket_details_click", "d": "User taps + Add Details on a Need details card", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}]}, {"t": "User type", "u": "on the ticket (Need details)", "dash": true, "api": [["PUT", "users/missing-cashback/queue/<id> (user type)"]], "w": [["bar", ["‹", ""]], ["box", "Are you a new user on Myntra?"], ["row", ["New", "Existing"]], ["box", "Learn More sheet"], ["cta", "Continue"]], "e": [{"n": "pw_claim_utype_submit", "d": "User answers the new or existing user question (Group B)", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]", "action [new_user, existing_user]"]}, {"n": "pw_claim_utype_info_load", "d": "Learn More sheet opens on the user type screen", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}]}, {"t": "Invoice upload", "u": "on the ticket", "dash": true, "api": [["", "invoice upload per the frontend build; endpoint not walked"]], "w": [["bar", ["‹", ""]], ["box", "Upload your invoice screenshot<br>Up to 3 images, 2 MB each"], ["box", "Add photo"], ["cta", "Continue"]], "e": [{"n": "pw_invoice_page", "d": "Invoice upload screen rendered (Group C)", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}, {"n": "pw_invoice_screen_clicks", "d": "Add photo on the invoice screen", "p": ["action [add_photo]", "retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}, {"n": "pw_invoice_submit", "d": "Continue on the invoice screen", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}, {"n": "pw_ticket_submitted_page", "d": "Ticket Submitted screen after details or invoice", "p": ["retailer", "type [Group A, Group B1, Group B2, Group C1, Group C2, Group D]"]}]}];
+  document.getElementById('screens').innerHTML = S.map(function (s, i) {
+    return '<div class="screen ' + (s.dash ? 'dashed' : '') + '"><div><div class="step-head"><span class="step-no">' + (s.dash ? 'branch · not walked live' : 'page ' + (i + 1)) + '</span><h3>' + s.t + '</h3><span class="chip url">' + s.u.replace(/</g, '&lt;') + '</span></div><div class="phone" style="margin-top:10px">' + wire(s.w) + '</div></div>' +
+      '<div class="right"><div><div class="sec">API</div><div class="apis">' + A(s.api.map(function (a) { return [a[0] || '·', a[1]]; })) + '</div></div>' +
+      '<div><div class="sec">Events on this page (' + s.e.length + ')</div><div class="evs">' + s.e.map(function (e) {
+        return '<div class="ev"><span class="chip evt">' + e.n + '</span><span class="d">' + e.d.replace(/</g, '&lt;') + '</span>' + (e.p.length ? '<span class="p">' + e.p.join(' · ').replace(/</g, '&lt;') + '</span>' : '') + '</div>';
+      }).join('') + '</div></div></div></div>';
+  }).join('');
+
+  var slic = function (a) { return '<div class="slicers">' + a.map(function (x) { return '<span><b>' + x + '</b></span>'; }).join('') + '</div>'; };
+  var kpi = function (t, s) { return '<div class="vis c3"><div class="kpi">—<small>' + t + '</small></div><span class="note">' + s + '</span></div>'; };
+  var bars = function (rows) { return '<div class="bars">' + rows.map(function (r) { return '<div><span>' + r[0] + '</span><i style="width:' + r[1] + '%"></i></div>'; }).join('') + '</div>'; };
+  var line = '<div class="line"><svg viewBox="0 0 200 70" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="0,52 25,46 50,50 75,34 100,38 125,24 150,30 175,18 200,22"/><line x1="0" y1="68" x2="200" y2="68" stroke="var(--wire-line)" stroke-width="1"/></svg></div>';
+  var matrix = function (cols) { return '<div class="tbl"><table><thead><tr>' + cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>' + ['Myntra', 'Ajio', 'Shopsy', 'Flipkart', 'Total'].map(function (s) { return '<tr><td>' + s + '</td>' + cols.slice(1).map(function () { return '<td class="n">—</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>'; };
+  var pages = [
+    { n: '1 · Overview and flows', d: 'Is the webview healthy, and where do people go?',
+      h: slic(['source: paytm', 'Month', 'Date', 'User segment', 'New vs returning']) +
+        '<div class="grid">' + kpi('Users', 'distinct user_id on any pw_ event') + kpi('Sessions', 'derived from timestamps') + kpi('Handoff success %', 'pw_session_success over success + error') + kpi('Session errors', 'by type') +
+        '<div class="vis c8"><div class="t">Daily users and handoff success %</div>' + line + '</div>' +
+        '<div class="vis c4"><div class="t">Session errors by type</div>' + bars([['invalid_link', 55], ['session_expired', 30], ['login_failed', 15]]) + '</div>' +
+        '<div class="vis c12"><div class="t">Flow, screen to screen (Sankey)</div><div class="flowrow"><span>Entry</span>→<span>My Cashback</span>→<span>Store page</span>→<span>Exit to retailer</span> &nbsp;|&nbsp; <span>My Cashback</span>→<span>Claim</span>→<span>Tickets</span><span>Leaves</span></div></div></div>' },
+    { n: '2 · Store page', d: 'Which stores earn, and does the page push people to exit?',
+      h: slic(['source: paytm', 'Month', 'Date', 'Store', 'User segment', 'Cashback status']) +
+        '<div class="grid">' + kpi('Store views', 'pw_store_page') + kpi('Exit CTR', 'pw_store_exit_click over pw_store_page') + kpi('Timeline-card taps', 'pw_store_timeline_click') + kpi('Coupon copies', 'pw_store_coupon_click') +
+        '<div class="vis c12"><div class="t">By store · same layout as the Flash Deals matrix</div>' + matrix(['Store', 'Views', 'Exits', 'Exiters', 'Txns', 'Transactors', 'GMV', 'Commission', 'Revenue', 'AOV', 'Cmsn/Txn', 'Cmsn/User', 'Conv. %']) + '</div>' +
+        '<div class="vis c6"><div class="t">Views and exits by day</div>' + line + '</div>' +
+        '<div class="vis c6"><div class="t">Scroll depth (25 / 50 / 75 / 100) and other taps</div>' + bars([['tracks', 60], ['confirms', 40], ['credited', 35], ['terms / faq / details', 25]]) + '</div></div>' },
+    { n: '3 · My Cashback and MCT', d: 'Do users find their earnings, and where do missing-cashback claims drop?',
+      h: slic(['source: paytm', 'Month', 'Date', 'Retailer', 'Group A to D', 'User segment']) +
+        '<div class="grid">' + kpi('My Cashback views', 'pw_cashback_page') + kpi('Filter use', 'pw_cashback_filter_click') + kpi('Earning Status opens', 'pw_earn_status_load') + kpi('My Tickets taps', 'pw_cashback_screen_clicks') +
+        '<div class="vis c7"><div class="t">Claim funnel</div>' + bars([['Entry', 100], ['Retailer', 78], ['Date', 64], ['Order ID', 52], ['Amount', 44], ['Ticket raised', 40]]) + '<span class="note">Bar lengths are illustrative. Split by retailer and group; entry split by my_cashback vs tickets.</span></div>' +
+        '<div class="vis c5"><div class="t">Errors by step</div>' + bars([['date', 20], ['order_id', 60], ['amount', 15], ['network / server', 10]]) + '<div class="t">Already tracked</div><span class="note">pw_claim_tracked_load, and View Details taps</span><div class="t">Submit outcome</div><span class="note">in_review vs closed</span></div>' +
+        '</div>' }
+  ];
+  var pgs = document.getElementById('pgs'), canvas = document.getElementById('canvas');
+  function show(i) {
+    var p = pages[i];
+    canvas.innerHTML = '<div><h3>' + p.n + '</h3><p class="note">' + p.d + '</p></div>' + p.h;
+    Array.prototype.forEach.call(pgs.children, function (b, j) { b.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+  }
+  pages.forEach(function (p, i) {
+    var b = document.createElement('button');
+    b.className = 'pg'; b.type = 'button'; b.textContent = p.n; b.id = 'pg' + i;
+    b.addEventListener('click', function () { show(i); });
+    pgs.appendChild(b);
+  });
+  show(0);
+
+  var tabs = [['t-flow', 'p-flow'], ['t-bi', 'p-bi']];
+  tabs.forEach(function (t) {
+    document.getElementById(t[0]).addEventListener('click', function () {
+      tabs.forEach(function (u) {
+        var on = u[0] === t[0];
+        document.getElementById(u[0]).setAttribute('aria-selected', on ? 'true' : 'false');
+        document.getElementById(u[1]).hidden = !on;
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
